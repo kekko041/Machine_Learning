@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Ambienti Virtuali
+venv/
+env/
+.env
+
+# Dati
+*.csv
+*.dat
+*.out
+*.hdf5
+*.h5
+*.parquet
+
+# Cartella Materiale
+materiale/
