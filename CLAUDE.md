@@ -11,6 +11,10 @@ dedicati, da consultare per primi:
   riferimenti a ISLR.
 - **`PIANO_STUDI.md`** — percorso di studio in 7 blocchi con esercizi
   concreti sugli script del corso e domande di autovalutazione.
+- **`RIASSUNTO_ISLR.md`** — riassunto completo, capitolo per capitolo, del
+  libro di testo `materiale/ISLRv2_corrected_June_2023-1.pdf` (tutti e 13 i
+  capitoli; quelli coperti dal corso — 2,3,4,5,6,8,9 — più approfonditi, gli
+  altri — 7,10-13 — più sintetici).
 
 Come usarlo: chiedi a Claude cose come "spiegami la PCR partendo dal codice di
 day02", "interrogami sugli alberi CART", "confronta bagging e random forest",
