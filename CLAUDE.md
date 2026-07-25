@@ -15,6 +15,12 @@ dedicati, da consultare per primi:
   libro di testo `materiale/ISLRv2_corrected_June_2023-1.pdf` (tutti e 13 i
   capitoli; quelli coperti dal corso — 2,3,4,5,6,8,9 — più approfonditi, gli
   altri — 7,10-13 — più sintetici).
+- **`NOTE_SESSIONE_FEATURE_MAP_RIDGE_LASSO.md`** — note di una sessione di
+  Q&A: spiegazioni intuitive (con analogie) di feature map (Φ) e kernel
+  trick, riepilogo del Day 1 (`meatspec`), e Ridge/Lasso spiegati a partire
+  dall'overfitting osservato nel Day 1. Non sostituisce `SINTESI_CORSO.md`
+  (più formale/completo) ma è utile come spiegazione "in parole semplici" di
+  raccordo tra quei concetti.
 
 Come usarlo: chiedi a Claude cose come "spiegami la PCR partendo dal codice di
 day02", "interrogami sugli alberi CART", "confronta bagging e random forest",
