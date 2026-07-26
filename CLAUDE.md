@@ -20,9 +20,13 @@ dedicati, da consultare per primi:
   trick, riepilogo del Day 1 (`meatspec`), Ridge/Lasso spiegati a partire
   dall'overfitting osservato nel Day 1, riepilogo del Day 2 (selezione per
   correlazione + k-fold CV handmade), PCA spiegata con l'esempio del cavallo
-  (`horse-PCA.pdf`), e PCR/PLS spiegati a partire dal Day 2. Non sostituisce
-  `SINTESI_CORSO.md` (più formale/completo) ma è utile come spiegazione "in
-  parole semplici" di raccordo tra quei concetti.
+  (`horse-PCA.pdf`), PCR/PLS spiegati a partire dal Day 2, riepilogo del
+  Day 3 (CART/alberi su `GlaucomaMVF`), instabilità degli alberi,
+  bagging/random forest/boosting spiegati come due logiche opposte (media di
+  pareri indipendenti vs correzione sequenziale del bias), e il pruning
+  (`cp`) come lo stesso "guinzaglio" di λ e del cutoff del Day 2. Non
+  sostituisce `SINTESI_CORSO.md` (più formale/completo) ma è utile come
+  spiegazione "in parole semplici" di raccordo tra quei concetti.
 
 Come usarlo: chiedi a Claude cose come "spiegami la PCR partendo dal codice di
 day02", "interrogami sugli alberi CART", "confronta bagging e random forest",

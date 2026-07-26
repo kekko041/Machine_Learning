@@ -1,4 +1,4 @@
-# Note di sessione — Feature map, Kernel trick, Day 1-2, Ridge & Lasso, PCA/PCR/PLS
+# Note di sessione — Feature map, Kernel trick, Day 1-3, Ridge & Lasso, PCA/PCR/PLS, Alberi & Ensemble
 
 Appunti da una sessione di Q&A con Claude, con spiegazioni intuitive
 (collegate al codice e ai dataset del corso) su alcuni concetti chiave.
@@ -279,4 +279,119 @@ strategie diverse usando la stessa metrica e lo stesso ricampionamento,
 invece di confrontare numeri ottenuti in modi diversi.
 
 Riferimento: ISLR cap. 6.3 (Dimension Reduction Methods: PCR, PLS); §4 di
+`SINTESI_CORSO.md`.
+
+---
+
+## 8. Cosa è stato fatto nel Day 3 (script `CART-screen.R`, `CART-screen2.R`,
+`CART-screen3.R`, `CART-plot.R`, dataset `GlaucomaMVF`)
+
+Il Day 3 cambia dataset e problema — non più `meatspec` (regressione), ma
+`GlaucomaMVF` (pacchetto `ipred`): diagnosi binaria `glaucoma` vs `normal` da
+variabili cliniche/oculari — e cambia famiglia di modelli: dagli alberi
+lineari (lm, Ridge/Lasso, PCR/PLS) agli **alberi decisionali (CART)** e ai
+loro **ensemble**. La parte formale/completa è già in `SINTESI_CORSO.md` §7
+(alberi: CART/rpart, C4.5-J48, C5.0, ctree, pruning, `CART-plot.R`), §8
+(bagging/random forest/boosting) e §9 (classificatori a regole, PART/C5.0
+rules) — qui aggiungo solo il livello "spiegazione in parole semplici" che
+collega questi metodi a quanto già visto (§1-7).
+
+---
+
+## 9. Perché un albero singolo è "capriccioso" — l'instabilità dei CART
+
+**Cosa nota esplicitamente il docente in `CART-screen.R`**: rifittando lo
+stesso albero (`rpart(Class ~ ., data = training)`) con condizioni iniziali
+leggermente diverse, l'albero risultante può essere diverso da quello di un
+altro studente sugli stessi dati — "se il vostro albero è diverso dal mio
+siatene felici!".
+
+**Perché succede**: un albero costruisce i suoi split in modo **greedy e
+gerarchico** — sceglie la variabile e la soglia che separano meglio *in
+quel momento*, poi ripete sui sotto-gruppi. Se per un pugno di osservazioni
+in più o in meno il primo split cambia (es. tra due variabili quasi
+altrettanto informative), **tutto l'albero sotto quel nodo cambia**, perché
+ogni split successivo dipende da quello precedente. È il motivo per cui gli
+alberi sono descritti come modelli ad **alta varianza**: piccole
+perturbazioni nei dati di training → risultati anche molto diversi.
+
+**Collegamento a quanto già visto**: è lo stesso tipo di instabilità
+osservato nel Day 1 con `lm` sulle 100 frequenze collineari (§3) — lì la
+causa era la multicollinearità, qui è la natura gerarchica/greedy degli
+split — ma l'effetto (un modello "nervoso", sensibile ai dati) è concettualmente
+lo stesso, e la soluzione ha la stessa struttura logica: **non fidarsi di un
+singolo fit, ma combinarne molti** (ensemble) o **penalizzare/limitare la
+complessità** (pruning, §11).
+
+---
+
+## 10. Bagging, Random Forest e Boosting — la stessa idea di "combinare tanti
+pareri", con due logiche opposte
+
+**Analogia**: un albero singolo è come chiedere una diagnosi a un solo medico
+un po' "umorale" — bravo in media, ma la risposta può cambiare parecchio da
+un giorno all'altro (alta varianza). Due modi diversi per ottenere una
+diagnosi più affidabile chiedendo a più medici:
+
+- **Bagging / Random Forest — "tanti pareri indipendenti, poi si fa la
+  media"**: si fanno crescere **alberi grandi, volutamente overfittanti**
+  (bias basso, varianza alta — come il `mod_all` con 100 variabili nel Day 1,
+  ma qui l'"overfitting" è nella profondità dell'albero) su tanti campioni
+  bootstrap diversi (`ipred::bagging`, o "a mano" con `rmultinom()` +
+  `update(mod, weights=...)` in `CART-screen2.R`), e poi si **media** il loro
+  parere. Mediare pareri **indipendenti** (o poco correlati) riduce la
+  varianza senza aumentare il bias — è la stessa logica per cui la media di
+  tanti termometri leggermente imprecisi ma indipendenti è più affidabile di
+  un termometro solo. La **random forest** (`randomForest::randomForest`)
+  aggiunge un trucco in più: ad ogni split, ogni albero può scegliere solo tra
+  un **sottoinsieme casuale di variabili** (`mtry`) — questo "decorrela"
+  ulteriormente i medici tra loro (impedisce che copino tutti la stessa
+  variabile più forte), rendendo la media ancora più efficace.
+- **Boosting — "una squadra di specialisti in sequenza, ognuno corregge
+  l'errore del precedente"**: si parte da alberi **piccoli e deliberatamente
+  poco potenti** ("stumps": bias alto, varianza bassa — il medico junior che
+  sbaglia spesso ma in modo consistente), e si costruiscono **in sequenza**:
+  ogni nuovo albero si concentra su ciò che i precedenti hanno sbagliato
+  (`gbm::gbm`, oppure il boosting nativo di `C50::C5.0(..., trials=10)`, in
+  stile AdaBoost). Qui non si media per ridurre la varianza (è già bassa); si
+  **somma** in modo pesato per ridurre progressivamente il **bias**.
+
+**In una frase**: bagging/RF partono "in alto" (modelli complessi, alta
+varianza) e scendono mediando; il boosting parte "in basso" (modelli
+semplici, alto bias) e sale sommando correzioni successive. Sono le due facce
+opposte dello stesso trade-off bias-varianza incontrato la prima volta nel
+Day 2 (§5, il grafico train-error vs CV-score).
+
+Riferimento: ISLR cap. 8.2; §8 di `SINTESI_CORSO.md`; formalizzazione
+completa (bootstrap, OOB, `mtry`, framing bias-variance) in
+`materiale/Fine corso/Lavagnate-20260602/day5_lavagnate.pdf`.
+
+---
+
+## 11. Pruning — lo stesso "guinzaglio" di λ (Ridge/Lasso) e del cutoff (Day 2),
+ma per gli alberi
+
+**Il problema**: un albero fatto crescere senza limiti (`rpart.control(minsplit
+= 20, cp = 0)` in `CART-plot.R`) si adatta perfettamente al training set —
+uno split per ogni piccola irregolarità dei dati — ed è quindi il tipico
+overfitting già visto altrove nel corso (Day 1 con 100 variabili, Day 2 con
+troppe componenti/troppe poche esclusioni).
+
+**Il parametro `cp` (complexity parameter)**: gioca lo stesso ruolo di λ in
+Ridge/Lasso (§4) e del `cutoff` in `findCorrelation` (§5) — un numero che
+penalizza la complessità (qui: il numero di split) e va scelto per
+cross-validation, non a occhio. `rpart` calcola automaticamente una
+`cptable` con l'errore di CV interno (`xerror`) per diversi valori di `cp`;
+si sceglie il `cp` che minimizza `xerror` (`which.min(...)`) e si pota
+l'albero con `prune(tree, cp = cp_ottimo)`.
+
+**Perché è di nuovo lo stesso schema**: in tutti e quattro i casi (Ridge/Lasso,
+cutoff di correlazione, K di PCR/PLS, `cp` degli alberi) la ricetta è
+identica — (1) un solo numero controlla quanto il modello può essere
+complesso, (2) si costruisce una griglia di valori candidati, (3) si stima
+l'errore predittivo per ciascuno **via cross-validation sul solo training
+set**, (4) si sceglie il valore che minimizza quella stima. Cambia solo
+*cosa* viene reso più semplice (coefficienti, variabili, componenti, split).
+
+Riferimento: ISLR cap. 8.1 (cost-complexity pruning); §7 di
 `SINTESI_CORSO.md`.
