@@ -23,8 +23,12 @@ dedicati, da consultare per primi:
   (`horse-PCA.pdf`), PCR/PLS spiegati a partire dal Day 2, riepilogo del
   Day 3 (CART/alberi su `GlaucomaMVF`), instabilità degli alberi,
   bagging/random forest/boosting spiegati come due logiche opposte (media di
-  pareri indipendenti vs correzione sequenziale del bias), e il pruning
-  (`cp`) come lo stesso "guinzaglio" di λ e del cutoff del Day 2. Non
+  pareri indipendenti vs correzione sequenziale del bias), il pruning
+  (`cp`) come lo stesso "guinzaglio" di λ e del cutoff del Day 2, riepilogo
+  del Day 4-5 (`meatclass`, zoo dei classificatori), perché l'accuratezza non
+  basta (falsi positivi/negativi, Kappa), Naive Bayes spiegato con
+  l'analogia del frutto, e lo zoo dei classificatori riletto come lo stesso
+  trade-off bias-variance applicato alla forma del confine di decisione. Non
   sostituisce `SINTESI_CORSO.md` (più formale/completo) ma è utile come
   spiegazione "in parole semplici" di raccordo tra quei concetti.
 

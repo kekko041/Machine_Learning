@@ -1,4 +1,4 @@
-# Note di sessione — Feature map, Kernel trick, Day 1-3, Ridge & Lasso, PCA/PCR/PLS, Alberi & Ensemble
+# Note di sessione — Feature map, Kernel trick, Day 1-5, Ridge & Lasso, PCA/PCR/PLS, Alberi & Ensemble, Zoo dei classificatori
 
 Appunti da una sessione di Q&A con Claude, con spiegazioni intuitive
 (collegate al codice e ai dataset del corso) su alcuni concetti chiave.
@@ -394,4 +394,167 @@ set**, (4) si sceglie il valore che minimizza quella stima. Cambia solo
 *cosa* viene reso più semplice (coefficienti, variabili, componenti, split).
 
 Riferimento: ISLR cap. 8.1 (cost-complexity pruning); §7 di
+`SINTESI_CORSO.md`.
+
+---
+
+## 12. Cosa è stato fatto nel Day 4-5 (script `day04-05.R`, `DISD - Classifiers
+Zoo.R`; il kernel trick di `DISD - Kernel Trick.R` è già in §1-2)
+
+Il Day 4-5 chiude il cerchio tra regressione e classificazione, riusando
+proprio `meatspec`: la risposta continua `fat` viene **discretizzata** in due
+classi ("low"/"high"), prima a occhio con una soglia arbitraria (`cut(jnk,
+breaks = c(min, 22, max))`), poi in modo più sistematico con `kmeans(jnk,
+centers = 2)` (si etichettano i due cluster guardando i loro centri) — nasce
+così `meatclass`, la "versione categoriale" di `meatspec` già anticipata
+nel Day 1 (§3, le 3 sottopopolazioni nell'istogramma di `fat`). Dopo uno
+split stratificato (`createDataPartition`, classi moderatamente
+sbilanciate), lo script fa da traccia guidata: adatta un albero singolo con
+`caret::train(method="rpart2")` — prima con tuning di default, poi passando
+una griglia esplicita (`tuneGrid = data.frame(maxdepth = 1:20)`) — confronta
+due alberi con `resamples()`/`bwplot()`, introduce `confusionMatrix()` e la
+CV ripetuta con metriche dedicate alla classificazione
+(`trainControl(summaryFunction = twoClassSummary)`), e lascia **come
+esercizio esplicito** l'adattare una Random Forest sullo stesso problema
+("Provate ad adattare una RF? — A voi!") confrontandola con l'albero singolo
+tramite `varImp()` — lo stesso confronto albero-vs-ensemble già visto nel
+Day 3 (§9-10), qui su un problema di classificazione invece che su
+`GlaucomaMVF`.
+
+`DISD - Classifiers Zoo.R` fa invece un esperimento diverso e molto
+istruttivo: uno **stesso identico dataset sintetico 2D** non linearmente
+separabile (`mlbench.circle`, due classi a cerchi concentrici — la stessa
+struttura "nuvola centrale + anello esterno" già incontrata nel kernel trick,
+§1) viene affrontato con **una dozzina di classificatori diversi** (KNN,
+Naive Bayes, LDA, QDA, logistica, alberi, C5.0, random forest, SVM con vari
+kernel, reti neurali con diverse dimensioni), visualizzando il confine di
+decisione di ciascuno con la funzione custom `decisionplot()`.
+
+Riferimento: ISLR cap. 4; §5-6 e §10-11 di `SINTESI_CORSO.md` (dettaglio
+completo di ogni classificatore).
+
+---
+
+## 13. Perché "accuratezza" non basta — spiegazione intuitiva
+
+**Il problema**: contare semplicemente quante previsioni sono sbagliate
+(la **perdita 0/1**, `mean(pred != actual)`, usata negli script fin dal primo
+albero su `meatclass`) tratta **tutti gli errori allo stesso modo**. Ma un
+falso positivo e un falso negativo spesso non sono equivalenti.
+
+**Analogia**: un test diagnostico per una malattia grave. Sbagliare dicendo
+"sano" a un malato (**falso negativo**) può essere molto più grave di
+sbagliare dicendo "malato" a un sano (**falso positivo**, che nel peggiore
+dei casi porta solo ad accertamenti ulteriori). Un modello con il 95% di
+accuratezza che sbaglia sistematicamente proprio sui malati veri (magari
+perché la classe "malato" è rara) è **inutile in pratica**, anche se il
+numero sembra ottimo.
+
+**Da qui la necessità di guardare oltre l'accuratezza** — esattamente ciò
+che `caret::confusionMatrix()` restituisce: sensitivity (quanti malati veri
+vengono identificati), specificity (quanti sani veri vengono identificati
+correttamente), e con `twoClassSummary`/curve ROC anche una vista che non
+dipende da una singola soglia di decisione (0.5) ma da come sensitivity e
+specificity si scambiano al variare della soglia.
+
+**Cos'è il Kappa** (di Cohen, citato nello script): è l'accuratezza
+"corretta per il caso" — confronta quanto il modello ci azzecca in più
+rispetto a un classificatore che indovinasse a caso rispettando le stesse
+proporzioni di classe. Utile perché, con classi sbilanciate (come qui, "low"
+vs "high" moderatamente sbilanciate), un'accuratezza alta può nascondere un
+modello che si limita a prevedere quasi sempre la classe maggioritaria.
+
+Riferimento: ISLR cap. 4 (Classification, oltre l'accuracy); §5 di
+`SINTESI_CORSO.md`; formalizzazione (perdita 0/1, hinge loss come
+"surrogato") in `materiale/Fine corso/Lavagnate-20260602/day5_lavagnate.pdf`.
+
+---
+
+## 14. Naive Bayes spiegato in parole semplici
+
+**L'idea di base (teorema di Bayes)**: invece di modellare direttamente "qual
+è la classe più probabile dati questi valori delle variabili", si ribalta il
+problema — si modella "quanto sono tipici questi valori delle variabili
+*per ciascuna classe*" (`Pr(x|Y)`, la verosimiglianza) e si combina con
+quanto è frequente ciascuna classe in generale (`Pr(Y)`, il prior):
+
+```
+Pr(Y|x)  ∝  Pr(x|Y) · Pr(Y)
+```
+
+**Analogia**: per capire se un frutto sconosciuto è una mela o un'arancia,
+invece di avere una regola diretta "se colore=arancione e forma=tonda allora
+arancia", si ragiona così: "tra tutte le arance che ho mai visto, quante
+erano arancioni e tonde? tra tutte le mele, quante erano arancioni e
+tonde?" — e si sceglie la classe per cui la combinazione osservata è più
+tipica, pesando anche quanto sia comune quella classe in generale (se le mele
+sono il 90% dei frutti nel cesto, serve un'evidenza più forte per convincersi
+che è un'arancia).
+
+**Perché "naive" (ingenua)**: calcolare `Pr(x|Y)` per tutte le combinazioni
+di feature insieme sarebbe complicatissimo (servirebbe sapere come colore,
+forma, peso... covariano tra loro dentro ciascuna classe). Naive Bayes fa una
+scorciatoia drastica: **assume che le feature siano indipendenti tra loro,
+una volta nota la classe** — `Pr(x|Y) = Π_j Pr(x_j|Y)`, cioè valuta ogni
+variabile per conto suo e moltiplica i contributi, ignorando ("ingenuamente")
+eventuali correlazioni tra colore e forma. È un'assunzione quasi sempre
+falsa in pratica, ma spesso funziona bene lo stesso — è veloce, richiede poche
+osservazioni per stimare i parametri, ed è una base di confronto naturale per
+gli altri classificatori dello zoo (§15).
+
+**Nello script**: `e1071::naiveBayes(class ~ ., data = x)` sul dataset a
+cerchi concentrici — il confine di decisione che ne risulta è tipicamente più
+"morbido"/meno preciso di SVM o alberi su questo problema, proprio perché
+l'indipendenza condizionata è un'assunzione forte e qui palesemente non vera
+(le due variabili `x, y` sono legate insieme dalla distanza dal centro).
+
+Riferimento: ISLR cap. 4.4 (Naive Bayes); §6 di `SINTESI_CORSO.md`;
+formalizzazione completa in
+`materiale/Fine corso/Lavagnate-20260602/day5_lavagnate.pdf`.
+
+---
+
+## 15. Lo zoo dei classificatori — stesso problema, confini diversi: ancora
+bias-variance
+
+**L'esperimento in `DISD - Classifiers Zoo.R`** è pensato apposta per
+mostrare, sullo stesso identico dataset (i cerchi concentrici non linearmente
+separabili), quanto sia **diversa la forma del confine di decisione** che
+ciascuna famiglia di modelli riesce a disegnare — è la stessa domanda del
+Day 1 (che modello si adatta al problema?) ma vista attraverso un grafico
+invece che un numero (RMSE):
+
+- **KNN**: con `k=1` il confine è frastagliatissimo — ogni punto di training
+  "vota" da solo, il modello **overfitta** violentemente (varianza altissima,
+  bias basso). Con `k=10` il confine si smussa: ogni previsione media il
+  voto dei 10 vicini più prossimi, più bias ma meno varianza. Stesso
+  trade-off del Day 2 (numero di componenti in PCR/PLS, §5-7) e del Day 3
+  (`cp` degli alberi, §11), qui col parametro `k`.
+- **LDA vs QDA**: LDA assume che le classi abbiano la **stessa forma di
+  covarianza** e traccia un confine **lineare** — troppo rigido per i cerchi
+  concentrici (che richiedono un confine curvo), quindi **underfitta**. QDA
+  permette covarianze diverse per classe e quindi confini **quadratici**
+  (curvi) — più adatto qui, ma con il rischio di overfittare se i dati per
+  classe sono pochi (più parametri da stimare). È lo stesso spettro
+  bias-variance di prima, applicato alla *forma* del confine invece che al
+  numero di variabili/componenti.
+- **Naive Bayes**: confine intermedio, limitato dall'assunzione di
+  indipendenza (§14).
+- **Regressione logistica**: come LDA, confine lineare (nel logit) — stesso
+  limite sui cerchi concentrici, a meno di aggiungere a mano feature non
+  lineari (esattamente il ruolo di Φ, §1!).
+- **Alberi/ensemble/SVM/reti neurali**: confini via via più flessibili
+  (rettangolari e a gradini per gli alberi, curvi e "globali" per SVM con
+  kernel radiale, arbitrariamente complessi per le reti con più unità
+  nascoste) — la stessa idea di Φ (kernel trick, §2) o di composizione
+  gerarchica (reti) che permette di "piegare" un confine lineare in uno
+  curvo senza dover scegliere a mano la trasformazione giusta.
+
+**In una frase**: lo zoo dei classificatori non è un elenco di alternative
+scollegate — è la stessa storia raccontata nelle sezioni precedenti (un
+parametro/un'assunzione che controlla quanto il modello può essere flessibile,
+e va scelto guardando l'errore di previsione, non quello di training) vista
+"in pianta" invece che in un grafico errore-vs-complessità.
+
+Riferimento: ISLR cap. 4 (LDA/QDA/logistica/KNN) e cap. 9 (SVM); §6 e §11 di
 `SINTESI_CORSO.md`.
