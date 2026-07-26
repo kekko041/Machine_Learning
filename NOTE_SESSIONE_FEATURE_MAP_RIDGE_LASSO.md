@@ -558,3 +558,81 @@ e va scelto guardando l'errore di previsione, non quello di training) vista
 
 Riferimento: ISLR cap. 4 (LDA/QDA/logistica/KNN) e cap. 9 (SVM); §6 e §11 di
 `SINTESI_CORSO.md`.
+
+---
+
+## 16. SVM: cosa vuol dire "massimizzare il margine" — spiegazione intuitiva
+
+**Il problema che risolve**: dati due gruppi di punti separabili (almeno
+approssimativamente) da una retta/piano, ci sono **infinite** rette che li
+separano correttamente. Quale scegliere?
+
+**Analogia**: immagina di dover tracciare una strada dritta tra due gruppi di
+case (rosse e blu) senza toccarne nessuna. Potresti tracciarla vicinissima
+alle case rosse, o vicinissima alle blu, o esattamente a metà — tutte
+"funzionano" nel senso che separano i due gruppi. La SVM sceglie la strada
+**più larga possibile**: quella che lascia il massimo margine di sicurezza da
+entrambi i lati. Intuitivamente, una strada larga è più "robusta": un nuovo
+punto leggermente fuori posto ha meno probabilità di finire dal lato
+sbagliato rispetto a una strada strettissima incollata a un gruppo.
+
+**I "support vector"**: una volta tracciata la strada più larga possibile,
+solo le case **esattamente sul bordo della strada** contano per definirla —
+sono i punti di supporto. Tutte le altre case, più lontane dal confine,
+potrebbero sparire senza cambiare la strada di un millimetro. È il motivo del
+nome: il modello finale dipende solo da un sottoinsieme (spesso piccolo) delle
+osservazioni, non da tutte.
+
+**Collegamento al kernel trick (§1-2)**: la "strada dritta" funziona solo se
+i due gruppi sono ragionevolmente separabili in linea retta. Sui cerchi
+concentrici dello Zoo dei classificatori (§15), nessuna retta funziona — ed è
+esattamente lì che entra il kernel: si finge di lavorare in uno spazio
+trasformato (§1-2) dove una retta *esiste*, e nello Zoo lo si vede
+concretamente confrontando `kernel="linear"` (fallisce sui cerchi) con
+`"radial"`/`"polynomial"` (si adattano al confine curvo) — il kernel radiale
+in particolare è il più usato in pratica proprio perché produce confini curvi
+"morbidi" senza dover scegliere a mano quale trasformazione esplicita usare.
+
+Riferimento: ISLR cap. 9 (Support Vector Machines, in particolare la nozione
+di margine e support vector prima di introdurre i kernel); §11 di
+`SINTESI_CORSO.md`.
+
+---
+
+## 17. Reti neurali (cenno): comporre tante funzioni semplici — spiegazione
+intuitiva
+
+**L'idea di base**: una rete neurale shallow (un solo hidden layer, come
+`nnet::nnet(size = k)` nello Zoo) non è altro che tanti piccoli
+"classificatori lineari" (i neuroni del hidden layer, ciascuno una
+combinazione lineare degli input passata attraverso una funzione non
+lineare) le cui uscite vengono a loro volta combinate linearmente per dare
+la previsione finale.
+
+**Analogia**: pensa a un comitato di k "giudici junior", ognuno dei quali
+guarda gli stessi dati in ingresso ma si concentra su una propria
+combinazione/prospettiva particolare (un giudice potrebbe reagire forte solo
+quando `x1` è grande, un altro solo quando `x1` e `x2` sono entrambi
+piccoli, ecc.), e restituisce un giudizio semplice (sì/no, o un numero). Un
+giudice "capo" (l'ultimo strato) ascolta tutti i giudici junior e combina i
+loro pareri per la decisione finale. Nessun singolo giudice junior sa
+separare bene i cerchi concentrici — ma la combinazione delle loro opinioni
+parziali sì.
+
+**Perché è di nuovo un caso di Φ (§1)**: i k neuroni del hidden layer sono
+esattamente una feature map **appresa dai dati** invece che scelta a mano
+(come `feat = x1²+x2²` nel kernel trick, §1) o implicita (come nel kernel
+delle SVM, §2/§16) — la rete impara da sola quali "nuove coordinate"
+rendono il problema linearmente risolvibile nell'ultimo strato.
+
+**Il parametro `size` (k, numero di neuroni)**: gioca lo stesso ruolo di
+tutti gli altri iperparametri di complessità già visti (§11, tabella)
+— nello Zoo, aumentando k (1→2→4→10) il confine di decisione diventa via via
+più flessibile: con pochi neuroni la rete non riesce a "circondare" bene i
+cerchi concentrici (underfitting), con più neuroni il confine si adatta
+meglio ma cresce anche il rischio di overfitting (specialmente su pochi dati
+e senza early stopping/regolarizzazione). Stesso trade-off bias-variance,
+stesso schema logico di scelta (griglia di `size` + CV), diversa "manopola".
+
+Riferimento: ISLR cap. 10 (Deep Learning — approfondimento, il corso ne dà
+solo un cenno pratico); §12 di `SINTESI_CORSO.md`.

@@ -27,8 +27,10 @@ dedicati, da consultare per primi:
   (`cp`) come lo stesso "guinzaglio" di λ e del cutoff del Day 2, riepilogo
   del Day 4-5 (`meatclass`, zoo dei classificatori), perché l'accuratezza non
   basta (falsi positivi/negativi, Kappa), Naive Bayes spiegato con
-  l'analogia del frutto, e lo zoo dei classificatori riletto come lo stesso
-  trade-off bias-variance applicato alla forma del confine di decisione. Non
+  l'analogia del frutto, lo zoo dei classificatori riletto come lo stesso
+  trade-off bias-variance applicato alla forma del confine di decisione, SVM
+  spiegata con l'analogia della strada più larga (margine, support vector) e
+  reti neurali spiegate come comitato di giudici junior + giudice capo. Non
   sostituisce `SINTESI_CORSO.md` (più formale/completo) ma è utile come
   spiegazione "in parole semplici" di raccordo tra quei concetti.
 
