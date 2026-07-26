@@ -17,10 +17,12 @@ dedicati, da consultare per primi:
   altri — 7,10-13 — più sintetici).
 - **`NOTE_SESSIONE_FEATURE_MAP_RIDGE_LASSO.md`** — note di una sessione di
   Q&A: spiegazioni intuitive (con analogie) di feature map (Φ) e kernel
-  trick, riepilogo del Day 1 (`meatspec`), e Ridge/Lasso spiegati a partire
-  dall'overfitting osservato nel Day 1. Non sostituisce `SINTESI_CORSO.md`
-  (più formale/completo) ma è utile come spiegazione "in parole semplici" di
-  raccordo tra quei concetti.
+  trick, riepilogo del Day 1 (`meatspec`), Ridge/Lasso spiegati a partire
+  dall'overfitting osservato nel Day 1, riepilogo del Day 2 (selezione per
+  correlazione + k-fold CV handmade), PCA spiegata con l'esempio del cavallo
+  (`horse-PCA.pdf`), e PCR/PLS spiegati a partire dal Day 2. Non sostituisce
+  `SINTESI_CORSO.md` (più formale/completo) ma è utile come spiegazione "in
+  parole semplici" di raccordo tra quei concetti.
 
 Come usarlo: chiedi a Claude cose come "spiegami la PCR partendo dal codice di
 day02", "interrogami sugli alberi CART", "confronta bagging e random forest",
