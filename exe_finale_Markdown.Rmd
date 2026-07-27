@@ -1,0 +1,276 @@
+---
+title: "Network_Exercise"
+author: "Lavoro di Gruppo"
+date: "2026-07-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center"
+)
+```
+
+## Network exercise - Lavoro di gruppo
+
+Per completare l'esercizio Network, si è deciso di utilizzare algoritmi di classificazione. In particolare, sono stati utilizzati e confrontati tre modelli:
+
+- CART;
+- Random Forest;
+- NN.
+
+## Importazione del dataset
+
+Il dataset viene importato dal file netintru.txt.
+
+```{r dataset}
+network <- read.delim(
+  file.path("materiale", "network", "network", "netintru.txt"),
+  header = TRUE,
+  stringsAsFactors = TRUE
+)
+```
+
+## Analisi esplorativa
+
+```{r esplorazione_dataset}
+
+dim(network)
+
+names(network)
+
+str(network)
+
+summary(network)
+```
+
+Il dataset analizzato è composto da **15.905 osservazioni** e **23 variabili**. La variabile `result` rappresenta la classe da prevedere, mentre le restanti 22 variabili descrivono le caratteristiche delle connessioni di rete.
+
+La variabile target `result` è anch’essa di tipo categorico ed è costituita da cinque classi:
+
+- `normal`;
+
+- `dos`;
+
+- `probe`;
+
+- `r2l`;
+
+- `u2r`.
+
+```{r barplot, echo=FALSE}
+barplot(
+  table(network$result),
+  main = "Distribuzione delle classi",
+  las = 2
+)
+```
+
+```{r percentage_class_result, echo=FALSE}
+prop.table(table(network$result))
+```
+
+La distribuzione della variabile target result evidenzia un significativo sbilanciamento tra le classi. Il traffico normal rappresenta circa il 47,15% delle osservazioni mentre le classi r2l e u2r risultano invece fortemente minoritarie, con percentuali rispettivamente pari al 2,38% e allo 0,31%.
+
+```{r sd_variables, echo=FALSE}
+
+sapply(
+  network[sapply(network, is.numeric)],
+  sd
+)
+table(network$is_hot_login)
+# is_hot_login si può eliminare
+
+network$is_hot_login <- NULL
+
+```
+
+Si nota che il valore della variabile is_hot_login è uguale per tutte le osservazioni.
+
+## Analisi matrice di correlazione
+
+```{r corrplot, echo=FALSE}
+library(corrplot)
+numeric_cols <- sapply(network, is.numeric)
+data_numeric <- network[, numeric_cols]
+
+# Calcola matrice di correlazione
+cor_matrix <- cor(data_numeric, use = "complete.obs")
+
+# Trova le 5 variabili più correlate con le altre (media delle correlazioni assolute)
+cor_media <- sort(colMeans(abs(cor_matrix)), decreasing = TRUE)
+print("Variabili con maggiore correlazione media:")
+print(cor_media[1:5])
+
+# Plot della matrice di correlazione
+corrplot(cor_matrix, method = "color", type = "upper", 
+         tl.col = "black", tl.srt = 45,
+         title = "Matrice di Correlazione - Variabili Numeriche",
+         mar = c(0,0,2,0))
+```
+
+## Creazione dataset di training e test
+
+```{r dataset_creation, echo=FALSE}
+
+library(caret)
+
+## Creazione dataset di training e test
+
+set.seed(123)
+
+## Faccio uno split bilanciato anche perché ho delle classi molto sbilanciate verso normal e dos)
+
+idx <- createDataPartition(
+  network$result,
+  p = 0.75,
+  list = FALSE,
+  times = 1
+)
+
+tr <- network[idx, ]
+te <- network[-idx, ]
+
+prop.table( table(network$result) )
+
+prop.table(table(tr$result))
+prop.table(table(te$result))
+```
+
+## 1 MODELLO DI CLASSIFICAZIONE - CART
+
+```{r cart, echo=FALSE}
+
+library(rpart)
+
+ctrl <- trainControl(
+  method = "cv",
+  number = 5
+)
+
+cart_model <- train(
+  result ~ .,
+  data = tr,
+  method = "rpart",
+  trControl = ctrl
+)
+
+cart_model
+```
+
+Con un valore di cp (complexity parameter) = 0.02331483, il modello di classificazione CART produce l’accuracy più elevata, pari a circa 89,84%.
+
+```{r test_evaluation, echo=FALSE}
+pred_cart <- predict(
+  cart_model,
+  te
+)
+
+cm_cart <- confusionMatrix(
+  pred_cart,
+  te$result
+)
+
+cm_cart
+```
+
+I risultati mostrano che il modello CART ha buone prestazioni complessive, ma presenta un problema serio sulle classi minoritarie (r2l e u2r).
+
+```{r cart_plot_model, echo=FALSE}
+
+library(rattle)
+fancyRpartPlot(cart_model$finalModel)
+
+plot( varImp(cart_model), top = 20 )
+varImp(cart_model)
+```
+
+## 2 MODELLO DI CLASSIFICAZIONE - RANDOM FOREST
+
+```{r tr_RF, echo=FALSE}
+
+library(randomForest)
+
+rf_model <- train(
+  result ~ .,
+  data = tr,
+  method = "rf",
+  trControl = ctrl,
+  #tuneLength = 10,
+  verbose = TRUE
+)
+
+rf_model
+```
+
+```{r RF_predict_te, echo=FALSE}
+
+pred_rf <- predict(
+  rf_model,
+  te
+)
+
+cm_rf <- confusionMatrix(
+  pred_rf,
+  te$result
+)
+
+cm_rf
+```
+
+La Random Forest ottiene risultati nettamente migliori rispetto al CART, soprattutto sulle classi rare r2l e u2r.
+
+Nel test set classifica correttamente 3.904 osservazioni su 3.975, commettendo 71 errori complessivi.
+
+```{r RF_predict_varimp, echo=FALSE}
+
+imp_rf <- varImp(rf_model)
+
+imp_rf
+```
+
+L'importanza delle variabili nella classificazione della random forest è in linea con quella mostrata dal CART.
+
+## 3 MODELLO DI CLASSIFICAZIONE - NN
+
+```{r nnet, echo=FALSE}
+
+library(nnet)
+
+nnet_model <- train(
+  result ~ ., 
+  data = tr, 
+  method = "nnet", 
+  tuneGrid = expand.grid(size = 4, decay = 0.1),
+  trace = FALSE # Nasconde il log di addestramento
+)
+
+nnet_model
+```
+
+```{r nnet_te, echo=FALSE}
+yte_nnet <- predict(nnet_model, te) 
+
+cm_nnet <-confusionMatrix(
+  yte_nnet,
+  te$result
+)
+
+cm_nnet
+```
+
+La rete neurale ha ottenuto sul test set un’accuracy complessiva pari al 95,77%, classificando correttamente 3.807 osservazioni su un totale di 3.975. La principale criticità riguarda la classe u2r. Nessuna delle 12 osservazioni presenti nel test set viene classificata correttamente.
+
+```{r nnet_varimp, echo=FALSE}
+
+imp_nnet <- varImp(nnet_model)
+
+imp_nnet
+```
+
+Rispetto al CART e alla random forest, nel caso delle NN notiamo un'ordine differente nell'importanza delle variabili nella scelta della classe di output.
+
+## Analisi finale
